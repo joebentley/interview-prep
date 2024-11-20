@@ -12,23 +12,24 @@ class Stack:
             raise ValueError(f"capacity cannot be negative: {capacity}")
         self.capacity = capacity
         self.array = [None] * capacity
-        self.top = 0
+        self.top = -1
     
     def push(self, value):
         if type(value) == list:
             for v in value:
                 self.push(v)
         else:
+            self.top += 1
             if self.top == self.capacity:
                 raise StackOverflowException()
             self.array[self.top] = value
-            self.top += 1
     
     def pop(self) -> Any:
-        if self.top == 0:
+        if self.top == -1:
             raise StackUnderflowException()
+        v = self.array[self.top]
         self.top -= 1
-        return self.array[self.top]
+        return v
         
 
 ### Testing
