@@ -119,6 +119,9 @@ class Graph:
         return DepthFirstSearchResults(discovered_edges, back_edges)
     
     def breadth_first_search(self, initial_node) -> BreadthFirstSearchResults:
+        # White nodes are nodes that we haven't seen yet
+        # Grey nodes are nodes that we have seen but haven't popped from the queue yet
+        # Black nodes are nodes whose children we have explored
         class Colour(Enum):
             WHITE = 1
             GREY = 2
@@ -137,7 +140,7 @@ class Graph:
                 metadata[node] = _BreadthFirstSearchMetadata(Colour.GREY, 0, None)
             else:
                 metadata[node] = _BreadthFirstSearchMetadata(Colour.WHITE, -1, None)
-            
+
         q = deque()
         q.appendleft(initial_node)
         while len(q) > 0:
