@@ -54,9 +54,7 @@ class BreadthFirstSearchMetadata:
     distance: int
     predecessor: Node
 
-@dataclass
-class BreadthFirstSearchResults:
-    results: Dict[Node, BreadthFirstSearchMetadata]
+BreadthFirstSearchResults = Dict[Node, BreadthFirstSearchMetadata]
 
 class DoesNotConnectException(Exception):
     pass
@@ -120,7 +118,7 @@ class Graph:
 
         return DepthFirstSearchResults(discovered_edges, back_edges)
     
-    def breadth_first_search(self, initial_node):
+    def breadth_first_search(self, initial_node) -> BreadthFirstSearchResults:
         class Colour(Enum):
             WHITE = 1
             GREY = 2
@@ -135,13 +133,27 @@ class Graph:
         # Setup default node metadata
         metadata: Dict[Node, _BreadthFirstSearchMetadata] = {}
         for node in self.adjacency_list.keys():
-            metadata[node] = _BreadthFirstSearchMetadata(Colour.WHITE, -1, None)
             if node == initial_node:
-                metadata[node].colour = Colour.GREY
-        
+                metadata[node] = _BreadthFirstSearchMetadata(Colour.GREY, 0, None)
+            else:
+                metadata[node] = _BreadthFirstSearchMetadata(Colour.WHITE, -1, None)
+            
+        q = deque()
+        q.appendleft(initial_node)
+        while len(q) > 0:
+            u = q.pop()
+            u_metadata = metadata[u]
+            for v in self.adjacency_list[u]:
+                v_metadata = metadata[v]
+                if v_metadata.colour == Colour.WHITE:
+                    v_metadata.colour = Colour.GREY
+                    v_metadata.distance = u_metadata.distance + 1
+                    v_metadata.predecessor = u
+                    q.appendleft(v)
+            u_metadata.colour = Colour.BLACK
 
-
-        pass
+        # Strip out the colour metadata
+        return { k: BreadthFirstSearchMetadata(v.distance, v.predecessor) for k, v in metadata.items() }
 
 ### Testing
 import unittest, sys
@@ -193,6 +205,30 @@ class TestGraph(unittest.TestCase):
         self.assertListEqual(results.discovered_edges,
                              [Edge(0, 5), Edge(0, 1), Edge(1, 2), Edge(2, 3), Edge(3, 4)])
         self.assertListEqual(results.back_edges, [Edge(4, 2), Edge(3, 1)]), 
+
+    def test_breadth_first_search(self):
+        # from the algorithms book
+        test_graph = Graph({
+            's': ['r', 'w'],
+            'r': ['s', 'v'],
+            'v': ['r'],
+            'w': ['s', 't', 'x'],
+            't': ['u', 'x', 'w'],
+            'u': ['t', 'x', 'y'],
+            'x': ['w', 't', 'u', 'y'],
+            'y': ['x', 'u']
+        })
+        results = test_graph.breadth_first_search('s')
+        self.assertIsNone(results['s'].predecessor)
+        self.assertEqual(results['s'].distance, 0)
+        self.assertEqual(results['t'].distance, 2)
+        self.assertEqual(results['t'].predecessor, 'w')
+        self.assertEqual(results['u'].distance, 3)
+        self.assertEqual(results['u'].predecessor, 't')
+        self.assertEqual(results['y'].distance, 3)
+        self.assertEqual(results['y'].predecessor, 'x')
+        self.assertEqual(results['v'].distance, 2)
+        self.assertEqual(results['v'].predecessor, 'r')
 
 if __name__ == '__main__':
     if len(sys.argv) > 1 and sys.argv[1] == 'test':
